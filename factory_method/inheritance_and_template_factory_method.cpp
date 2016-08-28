@@ -59,6 +59,7 @@ class Factory{
         virtual Glass* makeGlass() const{
             return new Glass("dark glass");
         }
+        //this method is partially a builder pattern
         virtual Gun* makeGuns() const{
             Steel* mySteel = makeSteel();
             Glass* myGlass = makeGlass();
