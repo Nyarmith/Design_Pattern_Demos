@@ -1,2 +1,2 @@
-# Design_Pattern_Demos
-For personal reference
+Notes from this book + video series:
+https://www.udemy.com/patterns-cplusplus
