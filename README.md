@@ -11,3 +11,7 @@ https://www.udemy.com/patterns-cplusplus
 
 ## Structural
 * Adapter
+* Bridge
+* Composite
+* Decorator
+* Facade

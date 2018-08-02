@@ -11,17 +11,34 @@
 #include <utility>
 #include <queue>
 #include <memory>
+#include <boost/functional/hash.hpp>
 using namespace std;
 #define ll long long
 
 struct Point
 {
   int x,y;
+
+  //implementing a hash
+  friend std::size_t hash_value(const Point& obj)
+  {
+    std::size_t seed = 0x1E44943F;
+    boost::hash_combine(seed, obj.x);
+    boost::hash_combine(seed, obj.y);
+    return seed;
+  }
 };
 
 struct Line
 {
   Point start, end;
+  friend std::size_t hash_value(const Line& obj)
+  {
+    std::size_t seed = 0x4D274623;
+    boost::hash_combine(seed, obj.start);
+    boost::hash_combine(seed, obj.end);
+    return seed;
+  }
 };
 
 struct VectorObject
@@ -52,7 +69,6 @@ struct VectorRectangle : VectorObject
     vector<Line> lines;
 };
 
-//this thing only accepts pixels! doesn't now how to draw vector objects
 void DrawPoints(std::vector<Point>::iterator start, std::vector<Point>::iterator end){
   for ( auto i=start; i != end; ++i)
     cout << i->x << " " << i->y << endl;
@@ -63,7 +79,6 @@ vector<shared_ptr<VectorObject>> vectorPointObjects {
   make_shared<VectorRectangle>(30,30,60,60),
 };
 
-//build an adapter between lines and pixels
 struct LineToPointAdapter
 {
     typedef vector<Point> Points;
@@ -72,7 +87,6 @@ struct LineToPointAdapter
     {
       static int count = 0;
 
-      // no interpolation
       int left = min(line.start.x, line.end.x);
       int right = max(line.start.x, line.end.x);
       int top = min(line.start.y, line.end.y);
@@ -80,10 +94,8 @@ struct LineToPointAdapter
       int dx = right - left;
       int dy = line.end.y - line.start.y;
 
-      // only vertical or horizontal lines
       if (dx == 0)
       {
-        // vertical
         for (int y = top; y <= bottom; ++y)
         {
           points.emplace_back(Point{ left,y });
@@ -104,15 +116,64 @@ struct LineToPointAdapter
     Points points;
 };
 
+
+//maybe you want the adapter to construct the set of points once, then resize them on widnow resizing (i.e. caching)
+//problem 1: how to determine when to cache - soln : generate hashcodes
+
+struct LineToPointCachingAdapter
+{
+    typedef vector<Point> Points;
+
+    LineToPointCachingAdapter(Line& line)
+    {
+      //hash!
+      boost::hash<Line> hash;
+      line_hash = hash(line); //cool!
+      if (cache.find(line_hash) != cache.end()) return;
+
+      static int count = 0;
+
+      int left = min(line.start.x, line.end.x);
+      int right = max(line.start.x, line.end.x);
+      int top = min(line.start.y, line.end.y);
+      int bottom = max(line.start.y, line.end.y);
+      int dx = right - left;
+      int dy = line.end.y - line.start.y;
+
+      if (dx == 0)
+      {
+        for (int y = top; y <= bottom; ++y)
+        {
+          points.emplace_back(Point{ left,y });
+        }
+      }
+      else if (dy == 0)
+      {
+        for (int x = left; x <= right; ++x)
+        {
+          points.emplace_back(Point{ x, top });
+        }
+      }
+      cache[line_hash] = points;
+    }
+
+    virtual Points::iterator begin() { return cache[line_hash].begin(); }
+    virtual Points::iterator end() { return cache[line_hash].end(); }
+  private:
+    static map<size_t, Points> cache;
+    size_t line_hash; //last line hash
+    Points points;
+};
+
 int main(){
 
   for (auto& o : vectorPointObjects){
     for( auto& l  :  *o)
     {
-      LineToPointAdapter lpo {l};
+      LineToPointCachingAdapter lpo {l};
       DrawPoints(lpo.begin(), lpo.end());
     }
   }
 }
 
-//tl;dr adapters are rally simple, shouldn't be overthought about, and can solve really tough-seeming interface mismatch problems (esp with iterators)
+//tl;dr this design pattern often generates temporary objects and it's often good to cache them 
