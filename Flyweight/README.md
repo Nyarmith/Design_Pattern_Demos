@@ -6,3 +6,8 @@ Avoid redundancy when storing data
 
 Formally:
 __Flyweight__ : A space optimization technique that lets us use less memory by storing externally the data associate with similar objects.
+
+Summary:
+- Store common data externally (e.g. static map)
+- Now refer to the data via indices, pointers or ranges (or some other efficient thing)
+
