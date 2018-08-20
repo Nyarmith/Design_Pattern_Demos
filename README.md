@@ -18,3 +18,6 @@ https://www.udemy.com/patterns-cplusplus
 * Flyweight
 * Proxy
 * Chain of Responsibility
+* Command
+* Interpreter
+* Iterator
